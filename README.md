@@ -6,7 +6,9 @@
 
 * **Sequential Nonlinear Regression**: see (Camp et al., 2020) and (Flennerhag et al., 2020).
 
+## TODO
 
+* [ ] Refine the interface of `plot_sequential_regression()`.
 
 ## References
 

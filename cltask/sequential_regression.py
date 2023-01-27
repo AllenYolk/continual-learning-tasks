@@ -76,9 +76,9 @@ def plot_sequential_regression(
     model: nn.Module, fx: Callable, start: float, end: float, dx: float = 0.02,
 ):
     x = torch.arange(start, end, dx).unsqueeze(dim=1)
-    y = fx(x).squeeze()
-    pred = model(x).squeeze()
-    x = x.squeeze(x)
+    y = fx(x).squeeze().detach()
+    pred = model(x).squeeze().detach()
+    x = x.squeeze()
 
     plt.style.use("ggplot")
     _, ax = plt.subplots()
