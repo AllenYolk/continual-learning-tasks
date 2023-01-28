@@ -38,7 +38,9 @@ def get_sequential_regression_loader(
         fx (Callable): the target function.
         ranges (Sequence[Sequence[float]]): a list whose elements are lists like 
             `[min, max]`, representing the range of independent variable x in 
-            each of the phases of the training procedure. 
+            each of training phase (or subtask). These "intervals" must be 
+            consecutive and arranged in an increasing manner.
+            e.g. [[-5, -3], [-3, -1], [-1, 1], [1, 3], [3, 5]]
         dx (float, optional): the gap between each pair of the adjacent point of
             independent variable x. Defaults to 0.02.
         noise_sd (float, optional): the standard deviation of white noise. 
@@ -47,14 +49,19 @@ def get_sequential_regression_loader(
 
     Returns:
         train_loaders (List[DataLoader]): a list of data-loaders for training.
-            Each one is for a single phase in the training procedure. On each
+            Each one is for a single training phase (or subtask). On each
             iteration, DataLoader in train_loaders gives out a tensor with shape
             [batch_size, 1].
-        test_loader (DataLoader): a single data-loader for the overall test. On
-            each iteration, test_loader gives out a tensor with shape 
+        test_loaders (DataLoader): a list of data-loaders for testing, with the
+            same length as `train_loaders`. test_loaders[i] samples data 
+            from the union of train_loaders[0,...,i]'s dataset. On each 
+            iteration, DataLoader in test_loaders gives out a tensor with shape 
+            [batch_size, 1]
+        overall_loader (DataLoader) a single data-loader for the overall test. 
+            On each iteration, test_loader gives out a tensor with shape 
             [batch_size, 1].
     """
-    train_loaders = []
+    train_loaders, test_loaders = [], []
     xx_min, xx_max = float("inf"), -float("inf")
     for x_min, x_max in ranges:
         if x_min > x_max:
@@ -65,11 +72,15 @@ def get_sequential_regression_loader(
         ))
         xx_min = min(xx_min, x_min)
         xx_max = max(xx_max, x_max)
-    test_loader = data.DataLoader(
+        test_loaders.append(data.DataLoader(
+            dataset=FuncRegressionDataSet(fx, xx_min, xx_max, dx, noise_sd),
+            batch_size=batch_size, shuffle=True, drop_last=False
+        ))
+    overall_loader = data.DataLoader(
         dataset=FuncRegressionDataSet(fx, xx_min, xx_max, dx, noise_sd),
         batch_size=batch_size, shuffle=True, drop_last=False
     )
-    return train_loaders, test_loader
+    return train_loaders, test_loaders, overall_loader
 
 
 def plot_sequential_regression(

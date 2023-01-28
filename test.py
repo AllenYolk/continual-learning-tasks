@@ -21,7 +21,7 @@ def sequential_regression_overall_train(epochs: int):
         return torch.sin(x*2+0.3) + 0.5*torch.sin(x*3-0.2)
 
     ranges = [[x, x+2] for x in range(-5, 5, 2)]
-    _, test_loader = cltask.get_sequential_regression_loader(
+    _, _, overall_loader = cltask.get_sequential_regression_loader(
         fx=f_target, ranges=ranges, batch_size=100
     )
 
@@ -32,10 +32,9 @@ def sequential_regression_overall_train(epochs: int):
             backend="torch", log_dir="../log_dir", net=net, 
             criterion=nn.MSELoss(), 
             optimizer=optim.Adam(net.parameters(), lr=1e-3),
-            train_loader=test_loader,
-            validation_loader=test_loader
+            train_loader=overall_loader,
         )
-    p.train(epochs=epochs, validation=True, silent=True)
+    p.train(epochs=epochs, silent=True)
     cltask.plot_sequential_regression(
         model=net, fx=f_target, start=-5, end=5
     )
@@ -56,9 +55,10 @@ def sequential_regression_phasic_train(epochs: int):
         return torch.sin(x*2+0.3) + 0.5*torch.sin(x*3-0.2)
 
     ranges = [[x, x+2] for x in range(-5, 5, 2)]
-    train_loaders, test_loader = cltask.get_sequential_regression_loader(
-        fx=f_target, ranges=ranges, batch_size=100
-    )
+    train_loaders, test_loaders, overall_loader =\
+        cltask.get_sequential_regression_loader(
+            fx=f_target, ranges=ranges, batch_size=100
+        )
 
     phases = len(ranges)
     cltask.plot_sequential_regression(
@@ -71,7 +71,7 @@ def sequential_regression_phasic_train(epochs: int):
             criterion=nn.MSELoss(), 
             optimizer=optim.Adam(net.parameters(), lr=1e-3),
             train_loader=train_loaders[phase],
-            validation_loader=test_loader
+            validation_loader=test_loaders[phase],
         )
         p.train(epochs=epochs, validation=True, silent=True)
         cltask.plot_sequential_regression(
