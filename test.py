@@ -21,7 +21,7 @@ def sequential_regression_overall_train(epochs: int):
         return torch.sin(x*2+0.3) + 0.5*torch.sin(x*3-0.2)
 
     ranges = [[x, x+2] for x in range(-5, 5, 2)]
-    train_loaders, test_loader = cltask.get_sequential_regression_loader(
+    _, test_loader = cltask.get_sequential_regression_loader(
         fx=f_target, ranges=ranges, batch_size=100
     )
 
@@ -35,7 +35,7 @@ def sequential_regression_overall_train(epochs: int):
             train_loader=test_loader,
             validation_loader=test_loader
         )
-    p.train(epochs=epochs, validation=True)
+    p.train(epochs=epochs, validation=True, silent=True)
     cltask.plot_sequential_regression(
         model=net, fx=f_target, start=-5, end=5
     )
@@ -62,7 +62,8 @@ def sequential_regression_phasic_train(epochs: int):
 
     phases = len(ranges)
     cltask.plot_sequential_regression(
-        model=net, fx=f_target, start=-5, end=5
+        model=net, fx=f_target, start=-5, end=5, #title="original"
+        fill_x_ranges=ranges
     )
     for phase in range(phases):
         p = reunn.SupervisedTaskPipeline(
@@ -72,9 +73,11 @@ def sequential_regression_phasic_train(epochs: int):
             train_loader=train_loaders[phase],
             validation_loader=test_loader
         )
-        p.train(epochs=epochs, validation=True)
+        p.train(epochs=epochs, validation=True, silent=True)
         cltask.plot_sequential_regression(
-            model=net, fx=f_target, start=-5, end=5
+            model=net, fx=f_target, start=-5, end=5, dx=0.02,
+            title=f"phase {phase}: {ranges[phase]}",
+            fill_x_ranges=[ranges[phase]]
         )
 
 

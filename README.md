@@ -8,7 +8,8 @@
 
 ## TODO
 
-* [ ] Refine the interface of `plot_sequential_regression()`.
+* [x] Refine the interface of `plot_sequential_regression()`.
+* [ ] Add new continual learning tasks.
 
 ## References
 

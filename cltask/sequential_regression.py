@@ -1,4 +1,4 @@
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Optional
 
 import torch
 import torch.nn as nn
@@ -74,15 +74,23 @@ def get_sequential_regression_loader(
 
 def plot_sequential_regression(
     model: nn.Module, fx: Callable, start: float, end: float, dx: float = 0.02,
+    title: Optional[str] = None,
+    fill_x_ranges: Optional[Sequence[Sequence[int]]] = None,
 ):
     x = torch.arange(start, end, dx).unsqueeze(dim=1)
-    y = fx(x).squeeze().detach()
-    pred = model(x).squeeze().detach()
-    x = x.squeeze()
+    y = fx(x).squeeze().detach().numpy()
+    pred = model(x).squeeze().detach().numpy()
+    x = x.squeeze().numpy()
 
     plt.style.use("ggplot")
     _, ax = plt.subplots()
+    color = "pink"
+    if fill_x_ranges is not None:
+        for xmin, xmax in fill_x_ranges:
+            ax.axvspan(xmin=xmin, xmax=xmax, alpha=0.4, color=color)
+            color = "lightblue" if color=="pink" else "pink"
     ax.plot(x, y, label="y")
     ax.plot(x, pred, label="pred")
     ax.legend()
+    ax.set(title=title)
     plt.show()
