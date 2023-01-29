@@ -85,7 +85,6 @@ def get_sequential_regression_loader(
 
 def plot_sequential_regression(
     model: nn.Module, fx: Callable, start: float, end: float, dx: float = 0.02,
-    title: Optional[str] = None,
     fill_x_ranges: Optional[Sequence[Sequence[int]]] = None,
 ):
     x = torch.arange(start, end, dx).unsqueeze(dim=1)
@@ -93,8 +92,7 @@ def plot_sequential_regression(
     pred = model(x).squeeze().detach().numpy()
     x = x.squeeze().numpy()
 
-    plt.style.use("ggplot")
-    _, ax = plt.subplots()
+    f, ax = plt.subplots()
     color = "pink"
     if fill_x_ranges is not None:
         for xmin, xmax in fill_x_ranges:
@@ -103,5 +101,4 @@ def plot_sequential_regression(
     ax.plot(x, y, label="y")
     ax.plot(x, pred, label="pred")
     ax.legend()
-    ax.set(title=title)
-    plt.show()
+    return f, ax
