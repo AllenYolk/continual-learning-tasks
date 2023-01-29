@@ -10,7 +10,7 @@
 ## TODO
 
 * [x] Refine the interface of `plot_sequential_regression()`.
-* [ ] Implement **Permuted Benchmark** task.
+* [x] Implement **Permuted Benchmark** task.
 * [ ] Add new continual learning tasks.
 
 ## References
