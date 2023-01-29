@@ -2,9 +2,9 @@ from typing import Optional, Sequence
 
 import torch
 import torch.nn as nn
-from torch.utils import data
 from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 class Permutation(nn.Module):
@@ -128,3 +128,21 @@ def remove_dataset_permutation(dataset: datasets.VisionDataset):
             dataset.transform = None
         else:
             dataset.transform.transforms.pop()
+
+
+def plot_permuted_benchmark_result_matrix(test_loss_mat, test_acc_mat):
+    f, ax = plt.subplots(ncols=2)
+    N = test_loss_mat.shape[0]
+    im0 = ax[0].imshow(test_loss_mat, cmap="Reds")
+    f.colorbar(im0, ax=ax[0], label="loss")
+    ax[0].set(
+        title="test loss", xticks=np.arange(N), yticks=np.arange(N),
+        xlabel="tested on", ylabel="have learned"
+    )
+    im1 = ax[1].imshow(test_acc_mat, cmap="Blues")
+    f.colorbar(im1, ax=ax[1], label="acc")
+    ax[1].set(
+        title="test acc", xticks=np.arange(N), yticks=np.arange(N),
+        xlabel="tested on", ylabel="have learned"
+    )
+    return f, ax
