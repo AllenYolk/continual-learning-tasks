@@ -72,8 +72,10 @@ def sequential_regression_phasic_train(epochs: int):
             optimizer=optim.Adam(net.parameters(), lr=1e-3),
             train_loader=train_loaders[phase],
             validation_loader=test_loaders[phase],
+            test_loader=test_loaders[phase]
         )
         p.train(epochs=epochs, validation=True, silent=True)
+        p.test()
         cltask.plot_sequential_regression(
             model=net, fx=f_target, start=-5, end=5, dx=0.02,
             title=f"phase {phase}: {ranges[phase]}",
