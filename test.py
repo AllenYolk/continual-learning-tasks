@@ -102,6 +102,7 @@ def permuted_mnist(n_subtask, epochs):
         nn.ReLU(),
         nn.Linear(128, 10),
     )
+    net = cltask.PermutationWrappedNetwork(net, apply_permutation=True)
 
     train_set = datasets.MNIST(
         root="../datasets", download=True, train=True,
@@ -117,37 +118,35 @@ def permuted_mnist(n_subtask, epochs):
     test_loader = data.DataLoader(
         test_set, batch_size=128, shuffle=False, drop_last=False
     )
-    perms = [None, ]
+    perms = []
 
     test_acc_mat = np.zeros(shape=[n_subtask, n_subtask])
     test_loss_mat = np.zeros_like(test_acc_mat)
     for i in range(n_subtask):
+        perm = net.change_permutation()
+        perms.append(perm)
+
         # train on subtask i
         p = reunn.SupervisedClassificationTaskPipeline(
             net=net, log_dir="../log_dir/pmnist", backend="torch",
             criterion=nn.CrossEntropyLoss(),
             optimizer=optim.Adam(net.parameters(), lr=1e-3),
-            train_loader=train_loader,
+            train_loader=train_loader, test_loader = test_loader
         )
         p.train(epochs=epochs, validation=False)
 
         # test on subtask 0~i
         for j, perm in enumerate(perms):
             if perm is not None:
-                cltask.change_dataset_permutation(test_set, perm)
-            p.imp.test_loader = test_loader
+                net.change_permutation(perm)
             result = p.test()
             test_loss_mat[i, j] = result["test_loss"]
             test_acc_mat[i, j] = result["test_acc"]
-        cltask.remove_dataset_permutation(test_set)
         print(
             f"<<<<<<<<<< {i+1} Learned Tasks, "
             f"mean_test_loss={np.mean(test_loss_mat[i, 0:i+1])}, ",
             f"mean_test_acc={np.mean(test_acc_mat[i, 0:i+1])}"
         )
-
-        perm = cltask.change_dataset_permutation(train_set)
-        perms.append(perm)
 
     f, _ = cltask.plot_permuted_benchmark_result_matrix(
         test_loss_mat=test_loss_mat, test_acc_mat=test_acc_mat

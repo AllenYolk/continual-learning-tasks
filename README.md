@@ -11,6 +11,8 @@
 
 * [x] Refine the interface of `plot_sequential_regression()`.
 * [x] Implement **Permuted Benchmark** task.
+* [x] Refactor permuted benchmark task to get better efficiency.
+* [ ] Modify the docs for permuted benchmark.
 * [ ] Add new continual learning tasks.
 
 ## References

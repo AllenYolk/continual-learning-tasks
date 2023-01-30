@@ -1,18 +1,18 @@
-from typing import Optional, Sequence
+from typing import Optional, Union
 
 import torch
 import torch.nn as nn
-from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
 import numpy as np
 
 
 class Permutation(nn.Module):
-    """A `Transform` on Tensors that can change the pixel order.
+    """Change the pixel order of the given image tensor.
 
     The same pixel-wise permutation is applied as long as the attribute `seed`
-    is fixed. Hence, this Transform can be used to create a permuted benchmark.
-    Notice: the input tensor `x` must be a image tensor with shape [C, H, W].
+    is fixed. Hence, this module can be placed before a network model to mimic a
+    permuted benchmark.
+    Notice: the input tensor `x` must be a image tensor with shape [N, C, H, W].
 
     Attributes:
         seed (int): the RNG seed used to generate random permutation.
@@ -23,111 +23,43 @@ class Permutation(nn.Module):
         self.seed = torch.seed() if seed is None else seed
 
     def forward(self, x: torch.Tensor):
-        # x does not have the batch dimension; x.shape = [C, H, W]
-        c, xshape = x.shape[0], x.shape[1:]
-        x = x.reshape(c, -1)
+        # x does not have the batch dimension; x.shape = [N, C, H, W]
+        nc, xshape = x.shape[0:2], x.shape[2:]
+        x = x.reshape(*nc, -1)
         torch.manual_seed(self.seed)
-        perm = torch.randperm(x.shape[1])
-        x = x[:, perm]
-        return x.reshape(c, *xshape)
+        perm = torch.randperm(x.shape[2])
+        x = x[:, :, perm]
+        return x.reshape(*nc, *xshape)
 
 
-def change_dataset_permutation(
-    dataset: datasets.VisionDataset, 
-    new_permutation: Optional[Permutation] = None
-) -> Permutation:
-    """Change the pixel order of every image sample in the dataset.
+class PermutationWrappedNetwork(nn.Module):
 
-    The same pixel-wise permutation is applied to every image sample in the
-    vision dataset. This function is implemented by appending a Permutation
-    to the transform list of the VisionDataset. Thanks to the fine-grained
-    conditions, we can ensure that there's no more than 1 Permutation transform
-    applied to a certain dataset at the same time, and Permutation must be 
-    place at the last position of the transform list.
+    def __init__(
+        self, net: nn.Module, seed: Optional[int] = None, 
+        apply_permutation: bool = True
+    ):
+        super().__init__()
+        self.net = net
+        self.permutation = Permutation(seed = seed)
+        self.apply_permutation = apply_permutation
 
-    Args:
-        dataset (datasets.VisionDataset): the vision dataset to be permuted.
-        new_permutation (Optional[Permutation], optional): a new Permutation
-            transform instance. Defaults to None, which will create a new random
-            Permutation transform instance.
+    @property
+    def permutation_seed(self) -> int:
+        return self.permutation.seed
 
-    Returns:
-        new_permutation (Permutation): the Permutation instance used to 
-            transform the dataset.
-    """
-    if new_permutation is None:
-        new_permutation = Permutation()
-
-    tf = dataset.transform
-    if (tf is None) or isinstance(tf, Permutation):
-        dataset.transform = new_permutation
-    elif isinstance(tf, transforms.Compose):
-        if isinstance(tf.transforms[-1], Permutation):
-            dataset.transform.transforms[-1] = new_permutation
+    def change_permutation(
+        self, perm: Optional[Permutation] = None
+    ) -> Permutation:
+        if perm is None:
+            self.permutation = Permutation()
         else:
-            dataset.transform.transforms.append(new_permutation)
-    else:
-        dataset.transform = transforms.Compose([tf, new_permutation])
+            self.permutation = perm
+        return self.permutation
 
-    return new_permutation
-
-
-def change_datasets_permutation(
-    datasets: Sequence[datasets.VisionDataset],
-    new_permutation: Optional[Permutation] = None
-) -> Permutation:
-    """Change the pixel order of several datasets in the same manner.
-
-    The same pixel-wise permutation is applied to every image sample in each
-    vision dataset. This function is implemented by appending a Permutation
-    to the transform list of each VisionDataset. Thanks to the fine-grained
-    conditions, we can ensure that there's no more than 1 Permutation transform
-    applied to a certain dataset at the same time, and Permutation must be 
-    place at the last position of the transform list.
-
-    Args:
-        datasets (Sequence[datasets.VisionDataset]): a list of vision datasets 
-            to be permuted.
-        new_permutation (Optional[Permutation], optional): a new Permutation
-            transform instance. Defaults to None, which will create a new random
-            Permutation transform instance.
-
-    Returns:
-        new_permutation (Permutation): the Permutation instance used to 
-            transform the dataset.
-    """
-    if new_permutation is None:
-        new_permutation = Permutation()
-
-    for dataset in datasets:
-        change_dataset_permutation(dataset, new_permutation)
-
-    return new_permutation
-
-
-def remove_dataset_permutation(dataset: datasets.VisionDataset):
-    """Remove the pixel-wise permutation transform applied to the dataset.
-
-    If there's a Permutation transform applied to `dataset`, remove it. If there
-    is no Permutation applied to `dataset`, nothing will happen. Since there's
-    no more than 1 Permutation applied at the same time, and Permutation must be
-    placed at the last position of the dataset's transform list, we can check
-    it easily.
-
-    Args:
-        dataset (datasets.VisionDataset): the target dataset.
-    """
-    # There's no more than 1 Permutation;
-    # Permutation must be placed at the last position of the transforms list.
-    tf = dataset.transform
-    if isinstance(tf, Permutation):
-        dataset.transform = None
-    elif (isinstance(tf, transforms.Compose) and len(tf.transforms) > 0 and
-        isinstance(tf.transforms[-1], Permutation)):
-        if len(tf.transforms) == 1:
-            dataset.transform = None
-        else:
-            dataset.transform.transforms.pop()
+    def forward(self, x: torch.Tensor):
+        if self.apply_permutation:
+            x = self.permutation(x)
+        return self.net(x)
 
 
 def plot_permuted_benchmark_result_matrix(test_loss_mat, test_acc_mat):
