@@ -12,7 +12,7 @@ class Permutation(nn.Module):
     The same pixel-wise permutation is applied as long as the attribute `seed`
     is fixed. Hence, this module can be placed before a network model to 
     simulate a permutation on the benchmark data.
-    Notice: the input tensor `x` must be a image tensor with shape [N, C, H, W].
+    Notice: the input tensor `x` must be a image tensor with shape [..., H, W].
 
     Attributes:
         seed (int): the RNG seed used to generate random permutation.
@@ -30,13 +30,13 @@ class Permutation(nn.Module):
         self.seed = torch.seed() if seed is None else seed
 
     def forward(self, x: torch.Tensor):
-        # x does not have the batch dimension; x.shape = [N, C, H, W]
-        nc, xshape = x.shape[0:2], x.shape[2:]
-        x = x.reshape(*nc, -1)
+        # x does not have the batch dimension; x.shape = [..., H, W]
+        pre_shape, xshape = x.shape[0:-2], x.shape[-2:]
+        x = x.reshape(*pre_shape, -1)
         torch.manual_seed(self.seed)
-        perm = torch.randperm(x.shape[2])
-        x = x[:, :, perm]
-        return x.reshape(*nc, *xshape)
+        perm = torch.randperm(x.shape[-1])
+        x = x[..., perm]
+        return x.reshape(*pre_shape, *xshape)
 
 
 class PermutationWrappedNetwork(nn.Module):
