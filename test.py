@@ -104,19 +104,19 @@ def permuted_mnist(n_subtask, epochs):
     )
     net = cltask.PermutationWrappedNetwork(net, apply_permutation=True)
 
-    train_set = datasets.MNIST(
-        root="../datasets", download=True, train=True,
-        transform=transforms.ToTensor()
-    )
-    test_set = datasets.MNIST(
-        root="../datasets", download=True, train=False, 
-        transform=transforms.ToTensor()
-    )
     train_loader = data.DataLoader(
-        train_set, batch_size=64, shuffle=False, drop_last=False
+        dataset=datasets.MNIST(
+            root="../datasets", download=True, train=True,
+            transform=transforms.ToTensor()
+        ),
+        batch_size=64, shuffle=False, drop_last=False
     )
     test_loader = data.DataLoader(
-        test_set, batch_size=128, shuffle=False, drop_last=False
+        dataset=datasets.MNIST(
+            root="../datasets", download=True, train=False, 
+            transform=transforms.ToTensor()
+        ),
+        batch_size=128, shuffle=False, drop_last=False
     )
     perms = []
 
@@ -146,6 +146,7 @@ def permuted_mnist(n_subtask, epochs):
             f"<<<<<<<<<< {i+1} Learned Tasks, "
             f"mean_test_loss={np.mean(test_loss_mat[i, 0:i+1])}, ",
             f"mean_test_acc={np.mean(test_acc_mat[i, 0:i+1])}"
+            f"<<<<<<<<<<"
         )
 
     f, _ = cltask.plot_permuted_benchmark_result_matrix(

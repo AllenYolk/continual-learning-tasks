@@ -2,6 +2,17 @@
 
 `cltask` is a package containing a series of continual learning tasks implemented by Pytorch.
 
+## Installation
+
+### Install from Source Code
+
+From [Github](https://github.com/AllenYolk/continual-learning-tasks):
+```shell
+git clone https://github.com/AllenYolk/continual-learning-tasks.git
+cd continual-learning-tasks
+pip install .
+```
+
 ## Task List
 
 * **Sequential Nonlinear Regression**: (Camp et al., 2020; Flennerhag et al., 2020)
@@ -12,8 +23,9 @@
 * [x] Refine the interface of `plot_sequential_regression()`.
 * [x] Implement **Permuted Benchmark** task.
 * [x] Refactor permuted benchmark task to get better efficiency.
-* [ ] Modify the docs for permuted benchmark.
+* [x] Modify the docs for permuted benchmark.
 * [ ] Add new continual learning tasks.
+* [x] Add installation guide.
 
 ## References
 
