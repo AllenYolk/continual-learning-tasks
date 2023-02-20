@@ -17,7 +17,7 @@ def f_target(x):
         return torch.sin(x*2+0.3) + 0.5*torch.sin(x*3-0.2)
 
 
-def sequential_regression_overall_train(epochs: int):
+def sequential_regression_overall_train(epochs: int, device):
     net = nn.Sequential(
         nn.Linear(1, 32),
         nn.ReLU(),
@@ -39,6 +39,7 @@ def sequential_regression_overall_train(epochs: int):
     plt.show()
     p = reunn.SupervisedTaskPipeline(
             backend="torch", log_dir="../log_dir", net=net, 
+            hparam=None, device=device,
             criterion=nn.MSELoss(), 
             optimizer=optim.Adam(net.parameters(), lr=1e-3),
             train_loader=overall_loader,
@@ -50,7 +51,7 @@ def sequential_regression_overall_train(epochs: int):
     plt.show()
 
 
-def sequential_regression_phasic_train(epochs: int):
+def sequential_regression_phasic_train(epochs: int, device):
     net = nn.Sequential(
         nn.Linear(1, 32),
         nn.ReLU(),
@@ -58,8 +59,6 @@ def sequential_regression_phasic_train(epochs: int):
         nn.ReLU(),
         nn.Linear(32, 1)
     )
-    st = reunn.NetStats(net=net, input_shape=[1, 1])
-    st.print_summary()
 
     ranges = [[x, x+2] for x in range(-5, 5, 2)]
     train_loaders, test_loaders, overall_loader =\
@@ -76,6 +75,7 @@ def sequential_regression_phasic_train(epochs: int):
     for phase in range(phases):
         p = reunn.SupervisedTaskPipeline(
             backend="torch", log_dir="../log_dir", net=net, 
+            hparam=None, device=device,
             criterion=nn.MSELoss(), 
             optimizer=optim.Adam(net.parameters(), lr=1e-3),
             train_loader=train_loaders[phase],
@@ -92,7 +92,7 @@ def sequential_regression_phasic_train(epochs: int):
         plt.show()
 
 
-def permuted_mnist(n_subtask, epochs):
+def permuted_mnist(n_subtask, epochs, device):
     net = nn.Sequential(
         nn.Flatten(),
         nn.Linear(784, 512),
@@ -129,6 +129,7 @@ def permuted_mnist(n_subtask, epochs):
         # train on subtask i
         p = reunn.SupervisedClassificationTaskPipeline(
             net=net, log_dir="../log_dir/pmnist", backend="torch",
+            hparam=None, device=device,
             criterion=nn.CrossEntropyLoss(),
             optimizer=optim.Adam(net.parameters(), lr=1e-3),
             train_loader=train_loader, test_loader = test_loader
@@ -159,11 +160,12 @@ def permuted_mnist(n_subtask, epochs):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--mode", type=str, default="permuted_mnist")
+    parser.add_argument("-d", "--device", type=str, default="cpu")
     args = parser.parse_args()
 
     if args.mode == "sequential_regression_overall":
-        sequential_regression_overall_train(epochs=1500)
+        sequential_regression_overall_train(epochs=1500, device=args.device)
     elif args.mode in ("sequential_regression", "sequential_regression_phasic"):
-        sequential_regression_phasic_train(epochs=3000)
+        sequential_regression_phasic_train(epochs=3000, device=args.device)
     elif args.mode == "permuted_mnist":
-        permuted_mnist(n_subtask=20, epochs=10)
+        permuted_mnist(n_subtask=20, epochs=10, device=args.device)
