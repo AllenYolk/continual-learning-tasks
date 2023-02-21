@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 
 import torch
 import torch.nn as nn
@@ -76,20 +76,22 @@ class PermutationWrappedNetwork(nn.Module):
         return self.permutation.seed
 
     def change_permutation(
-        self, perm: Optional[Permutation] = None
+        self, perm: Union[Permutation, int] = None
     ) -> Permutation:
         """Change the permutation module.
 
         Args:
-            perm (Permutation, optional): the new `Permutation` module. Defaults 
-                to None, where a new Permutation is generated implicitly using
-                torch.seed().
+            perm (Union[Permutation, int], optional): the new `Permutation` 
+                module. Defaults to None, where a new Permutation is generated 
+                implicitly using torch.seed().
 
         Returns:
             the new permutation.
         """
         if perm is None:
             self.permutation = Permutation()
+        elif isinstance(perm, int):
+            self.permutation = Permutation(seed=perm)
         else:
             self.permutation = perm
         return self.permutation
