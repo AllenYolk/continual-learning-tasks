@@ -38,7 +38,7 @@ def sequential_regression_overall_train(epochs: int, device):
     )
     plt.show()
     p = reunn.SupervisedTaskPipeline(
-            backend="torch", log_dir="../log_dir", net=net, 
+            backend="torch", log_dir="../logs", net=net, 
             hparam=None, device=device,
             criterion=nn.MSELoss(), 
             optimizer=optim.Adam(net.parameters(), lr=1e-3),
@@ -74,7 +74,7 @@ def sequential_regression_phasic_train(epochs: int, device):
     plt.show()
     for phase in range(phases):
         p = reunn.SupervisedTaskPipeline(
-            backend="torch", log_dir="../log_dir", net=net, 
+            backend="torch", log_dir="../logs", net=net, 
             hparam=None, device=device,
             criterion=nn.MSELoss(), 
             optimizer=optim.Adam(net.parameters(), lr=1e-3),
@@ -128,7 +128,7 @@ def permuted_mnist(n_subtask, epochs, device):
 
         # train on subtask i
         p = reunn.SupervisedClassificationTaskPipeline(
-            net=net, log_dir="../log_dir/pmnist", backend="torch",
+            net=net, log_dir="../logs/pmnist", backend="torch",
             hparam=None, device=device,
             criterion=nn.CrossEntropyLoss(),
             optimizer=optim.Adam(net.parameters(), lr=1e-3),
