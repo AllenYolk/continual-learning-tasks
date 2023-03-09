@@ -45,6 +45,10 @@ class Split10CIFAR100(data.Dataset):
         train: bool=True, transform=None, target_transform=None
     ):
         super().__init__()
+        if not os.path.exists(os.path.join(root, "cifar-100-split-10")):
+            prepare_split10_cifar100(root, True)
+            prepare_split10_cifar100(root, False)
+
         folder = "train" if train else "test"
         fpath = os.path.join(root, f"cifar-100-split-10/{folder}/{subtask}")
         with open(fpath, "rb") as f:
@@ -52,6 +56,7 @@ class Split10CIFAR100(data.Dataset):
         self.data = d["data"]
         self.targets = d["targets"]
         print(self.data.shape, self.targets.shape)
+
         self.transform = transform
         self.target_transform = target_transform
 
@@ -60,10 +65,12 @@ class Split10CIFAR100(data.Dataset):
 
     def __getitem__(self, idx):
         data, target = self.data[idx], self.targets[idx]
+
         if self.transform is not None:
             data = self.transform(data)
         if self.target_transform is not None:
             target = self.target_transform(target)
+
         return data, target
 
 
