@@ -15,7 +15,6 @@ def prepare_split10_cifar100(data_dir, train=True):
         download=True,
         transform=transforms.ToTensor()
     )
-    print(len(ds))
 
     data_bins = [[] for _ in range(10)]
     target_bins = [[] for _ in range(10)]
@@ -46,8 +45,10 @@ class Split10CIFAR100(data.Dataset):
     ):
         super().__init__()
         if not os.path.exists(os.path.join(root, "cifar-100-split-10")):
+            print("Prepare Split10CIFAR100......")
             prepare_split10_cifar100(root, True)
             prepare_split10_cifar100(root, False)
+            print("Finish preparation!")
 
         folder = "train" if train else "test"
         fpath = os.path.join(root, f"cifar-100-split-10/{folder}/{subtask}")
@@ -55,7 +56,6 @@ class Split10CIFAR100(data.Dataset):
             d = pickle.load(f)
         self.data = d["data"]
         self.targets = d["targets"]
-        print(self.data.shape, self.targets.shape)
 
         self.transform = transform
         self.target_transform = target_transform
