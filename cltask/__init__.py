@@ -7,3 +7,8 @@ from .permuted_benchmark import (
     PermutationWrappedNetwork,
     plot_permuted_benchmark_result_matrix,
 )
+
+from .split10_cifar100 import (
+    prepare_split10_cifar100,
+    Split10CIFAR100,
+)

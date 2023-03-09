@@ -8,7 +8,7 @@ from torch.utils import data
 from torchvision import datasets, transforms
 
 
-def prepare_split_cifar100(data_dir, train=True):
+def prepare_split10_cifar100(data_dir, train=True):
     ds = datasets.CIFAR100(
         root=data_dir, 
         train=train,
@@ -17,30 +17,25 @@ def prepare_split_cifar100(data_dir, train=True):
     )
     print(len(ds))
 
-    loader = data.DataLoader(ds, 10, shuffle=False)
-    x, y = next(iter(loader))
-    print(x.shape, y.shape)
-    print(y)
-
-    data_bins = [[] for i in range(10)]
-    label_bins = [[] for i in range(10)]
+    data_bins = [[] for _ in range(10)]
+    target_bins = [[] for _ in range(10)]
     for x, y in ds:
         bid = y//10
         data_bins[bid].append(x)
-        label_bins[bid].append(y)
+        target_bins[bid].append(y)
 
     folder = "train" if train else "test"
     for i in range(10):
         print(
             f"subtask {i}: N_data={len(data_bins[i])}, "
-            f"N_label={len(label_bins[i])}"
+            f"N_target={len(target_bins[i])}"
         )
         x = torch.stack(data_bins[i]).numpy()
-        y = np.array(label_bins[i])
+        y = np.array(target_bins[i])
         print("\t", x.shape, y.shape)
         fpath = os.path.join(data_dir, f"cifar-100-split-10/{folder}/{i}")
         with open(fpath, "wb+") as f:
-            pickle.dump({"data": x, "labels": y}, f)
+            pickle.dump({"data": x, "targets": y}, f)
 
 
 class Split10CIFAR100(data.Dataset):
@@ -55,22 +50,21 @@ class Split10CIFAR100(data.Dataset):
         with open(fpath, "rb") as f:
             d = pickle.load(f)
         self.data = d["data"]
-        self.labels = d["labels"]
-        print(self.data.shape, self.labels.shape)
+        self.targets = d["targets"]
+        print(self.data.shape, self.targets.shape)
         self.transform = transform
         self.target_transform = target_transform
 
-    # TODO: add __len__() and __getitem__()
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        data, label = self.data[idx], self.labels[idx]
+        data, target = self.data[idx], self.targets[idx]
         if self.transform is not None:
             data = self.transform(data)
         if self.target_transform is not None:
-            label = self.target_transform(label)
-        return data, label
+            target = self.target_transform(target)
+        return data, target
 
 
 if __name__ == "__main__":
@@ -80,8 +74,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     print(args)
-    prepare_split_cifar100(args.data_dir, train=True)
-    prepare_split_cifar100(args.data_dir, train=False)
+    prepare_split10_cifar100(args.data_dir, train=True)
+    prepare_split10_cifar100(args.data_dir, train=False)
 
     ds = Split10CIFAR100(args.data_dir, 0)
     dl = data.DataLoader(ds, 10, shuffle=True)
