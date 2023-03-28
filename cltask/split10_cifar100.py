@@ -13,7 +13,6 @@ def prepare_split10_cifar100(data_dir, train=True):
         root=data_dir, 
         train=train,
         download=True,
-        transform=transforms.ToTensor()
     )
 
     data_bins = [[] for _ in range(10)]
@@ -29,9 +28,8 @@ def prepare_split10_cifar100(data_dir, train=True):
             f"subtask {i}: N_data={len(data_bins[i])}, "
             f"N_target={len(target_bins[i])}"
         )
-        x = torch.stack(data_bins[i]).permute([0, 2, 3, 1]).numpy()
+        x = data_bins[i]
         y = np.array(target_bins[i])
-        print("\t", x.shape, y.shape)
         fpath = os.path.join(data_dir, f"cifar-100-split-10/{folder}/{i}")
         with open(fpath, "wb+") as f:
             pickle.dump({"data": x, "targets": y}, f)
@@ -84,7 +82,7 @@ if __name__ == "__main__":
     prepare_split10_cifar100(args.data_dir, train=True)
     prepare_split10_cifar100(args.data_dir, train=False)
 
-    ds = Split10CIFAR100(args.data_dir, 0)
+    ds = Split10CIFAR100(args.data_dir, 0, transform=transforms.ToTensor())
     dl = data.DataLoader(ds, 10, shuffle=True)
     bx, by = next(iter(dl))
     print(by)
