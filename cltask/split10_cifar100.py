@@ -29,7 +29,7 @@ def prepare_split10_cifar100(data_dir, train=True):
             f"subtask {i}: N_data={len(data_bins[i])}, "
             f"N_target={len(target_bins[i])}"
         )
-        x = torch.stack(data_bins[i]).numpy()
+        x = torch.stack(data_bins[i]).permute([0, 2, 3, 1]).numpy()
         y = np.array(target_bins[i])
         print("\t", x.shape, y.shape)
         fpath = os.path.join(data_dir, f"cifar-100-split-10/{folder}/{i}")
