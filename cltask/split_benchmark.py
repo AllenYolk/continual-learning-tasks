@@ -7,25 +7,21 @@ from torch.utils import data
 from torchvision import datasets, transforms
 
 
-def prepare_split10_cifar100(data_dir, train=True):
-    ds = datasets.CIFAR100(
-        root=data_dir, 
-        train=train,
-        download=True,
-    )
-
-    data_bins = [[] for _ in range(10)]
-    target_bins = [[] for _ in range(10)]
-    for x, y in ds:
-        bid = y//10
+def prepare_split_benchmark(
+    original_dataset, data_dir, n_subtask, n_categories_per_subtask, train=True
+):
+    data_bins = [[] for _ in range(n_subtask)]
+    target_bins = [[] for _ in range(n_subtask)]
+    for x, y in original_dataset:
+        bid = y // n_categories_per_subtask
         data_bins[bid].append(x)
         target_bins[bid].append(y)
 
     folder = "train" if train else "test"
-    dspath = os.path.join(data_dir, f"cifar-100-split-10/{folder}")
+    dspath = os.path.join(data_dir, f"split-{n_subtask}/{folder}")
     if not os.path.exists(dspath):
         os.makedirs(dspath)
-    for i in range(10):
+    for i in range(n_subtask):
         print(
             f"subtask {i}: N_data={len(data_bins[i])}, "
             f"N_target={len(target_bins[i])}"
@@ -37,21 +33,26 @@ def prepare_split10_cifar100(data_dir, train=True):
             pickle.dump({"data": x, "targets": y}, f)
 
 
-class Split10CIFAR100(data.Dataset):
+class SplitCIFAR100(data.Dataset):
 
     def __init__(
-        self, root: str, subtask: int, 
+        self, root: str, n_subtask: int, subtask_id: int, 
         train: bool=True, transform=None, target_transform=None
     ):
         super().__init__()
-        if not os.path.exists(os.path.join(root, "cifar-100-split-10")):
-            print("Prepare Split10CIFAR100......")
-            prepare_split10_cifar100(root, True)
-            prepare_split10_cifar100(root, False)
+        if 100 % n_subtask != 0:
+            raise ValueError("100 should be dividable by n_subtask")
+        if not os.path.exists(os.path.join(root, f"split-{n_subtask}")):
+            c = 100 // n_subtask
+            print(f"Prepare Split{n_subtask}CIFAR100......")
+            ds = datasets.CIFAR100(root, train=True, download=True)
+            prepare_split_benchmark(ds, root, n_subtask, c, train=True)
+            ds = datasets.CIFAR100(root, train=False, download=True)
+            prepare_split_benchmark(ds, root, n_subtask, c, train=False)
             print("Finish preparation!")
 
         folder = "train" if train else "test"
-        fpath = os.path.join(root, f"cifar-100-split-10/{folder}/{subtask}")
+        fpath = os.path.join(root, f"split-{n_subtask}/{folder}/{subtask_id}")
         with open(fpath, "rb") as f:
             d = pickle.load(f)
         self.data = d["data"]
@@ -81,10 +82,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     print(args)
-    prepare_split10_cifar100(args.data_dir, train=True)
-    prepare_split10_cifar100(args.data_dir, train=False)
 
-    ds = Split10CIFAR100(args.data_dir, 0, transform=transforms.ToTensor())
+    ds = SplitCIFAR100(args.data_dir, 10, 0, transform=transforms.ToTensor())
     dl = data.DataLoader(ds, 10, shuffle=True)
     bx, by = next(iter(dl))
     print(by)
