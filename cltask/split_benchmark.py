@@ -1,6 +1,7 @@
 import argparse
 import os
 import pickle
+import abc
 
 import numpy as np
 from PIL import Image
@@ -34,23 +35,20 @@ def _prepare_split_benchmark(
             pickle.dump({"data": x, "targets": y}, f)
 
 
-class SplitCIFAR100(data.Dataset):
+class SplitDataset(data.Dataset, abc.ABC):
 
     def __init__(
         self, root: str, n_subtask: int, subtask_id: int, 
         train: bool=True, transform=None, target_transform=None
     ):
         super().__init__()
-        if 100 % n_subtask != 0:
-            raise ValueError("100 should be dividable by n_subtask")
-        if not os.path.exists(os.path.join(root, f"split-{n_subtask}")):
-            c = 100 // n_subtask
-            print(f"Prepare Split{n_subtask}CIFAR100......")
-            ds = datasets.CIFAR100(root, train=True, download=True)
-            _prepare_split_benchmark(ds, root, n_subtask, c, train=True)
-            ds = datasets.CIFAR100(root, train=False, download=True)
-            _prepare_split_benchmark(ds, root, n_subtask, c, train=False)
-            print("Finish preparation!")
+        self.root = root
+        self.n_subtask = n_subtask
+        self.subtask_id = subtask_id
+        self.train = train
+        self.transform = transform
+        self.target_transform = target_transform
+        self.prepare()
 
         folder = "train" if train else "test"
         fpath = os.path.join(root, f"split-{n_subtask}/{folder}/{subtask_id}")
@@ -59,8 +57,9 @@ class SplitCIFAR100(data.Dataset):
         self.data = d["data"]
         self.targets = d["targets"]
 
-        self.transform = transform
-        self.target_transform = target_transform
+    @abc.abstractmethod
+    def prepare(self) -> None:
+        pass
 
     def __len__(self):
         return len(self.data)
@@ -74,6 +73,32 @@ class SplitCIFAR100(data.Dataset):
             target = self.target_transform(target)
 
         return data, target
+
+
+class SplitCIFAR100(SplitDataset):
+
+    def __init__(
+        self, root: str, n_subtask: int, subtask_id: int, 
+        train: bool=True, transform=None, target_transform=None
+    ):
+        super().__init__(
+            root, n_subtask, subtask_id, train, transform, target_transform
+        )
+
+    def prepare(self):
+        root = self.root
+        n_subtask = self.n_subtask
+
+        if 100 % n_subtask != 0:
+            raise ValueError("100 should be dividable by n_subtask")
+        if not os.path.exists(os.path.join(root, f"split-{n_subtask}")):
+            c = 100 // n_subtask
+            print(f"Prepare Split{n_subtask}CIFAR100......")
+            ds = datasets.CIFAR100(root, train=True, download=True)
+            _prepare_split_benchmark(ds, root, n_subtask, c, train=True)
+            ds = datasets.CIFAR100(root, train=False, download=True)
+            _prepare_split_benchmark(ds, root, n_subtask, c, train=False)
+            print("Finish preparation!")
 
 
 class TinyImageNet200(data.Dataset):
@@ -189,13 +214,20 @@ class TinyImageNet200(data.Dataset):
         return img, target
 
 
-class SplitTinyImageNet200(data.Dataset):
+class SplitTinyImageNet200(SplitDataset):
 
     def __init__(
         self, root: str, n_subtask: int, subtask_id: int, 
         train: bool=True, transform=None, target_transform=None
     ):
-        super().__init__()
+        super().__init__(
+            root, n_subtask, subtask_id, train, transform, target_transform
+        )
+
+    def prepare(self):
+        root = self.root
+        n_subtask = self.n_subtask
+
         if 200 % n_subtask != 0:
             raise ValueError("200 should be dividable by n_subtask")
         if not os.path.exists(os.path.join(root, f"split-{n_subtask}")):
@@ -206,29 +238,6 @@ class SplitTinyImageNet200(data.Dataset):
             ds = TinyImageNet200(root, train=False)
             _prepare_split_benchmark(ds, root, n_subtask, c, train=False)
             print("Finish preparation!")
-
-        folder = "train" if train else "test"
-        fpath = os.path.join(root, f"split-{n_subtask}/{folder}/{subtask_id}")
-        with open(fpath, "rb") as f:
-            d = pickle.load(f)
-        self.data = d["data"]
-        self.targets = d["targets"]
-
-        self.transform = transform
-        self.target_transform = target_transform
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        data, target = self.data[idx], self.targets[idx]
-
-        if self.transform is not None:
-            data = self.transform(data)
-        if self.target_transform is not None:
-            target = self.target_transform(target)
-
-        return data, target
 
 
 if __name__ == "__main__":
