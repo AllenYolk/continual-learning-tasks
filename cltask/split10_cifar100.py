@@ -3,7 +3,6 @@ import argparse
 import os
 
 import numpy as np
-import torch
 from torch.utils import data
 from torchvision import datasets, transforms
 
@@ -23,6 +22,9 @@ def prepare_split10_cifar100(data_dir, train=True):
         target_bins[bid].append(y)
 
     folder = "train" if train else "test"
+    dspath = os.path.join(data_dir, f"cifar-100-split-10/{folder}")
+    if not os.path.exists(dspath):
+        os.makedirs(dspath)
     for i in range(10):
         print(
             f"subtask {i}: N_data={len(data_bins[i])}, "
@@ -30,7 +32,7 @@ def prepare_split10_cifar100(data_dir, train=True):
         )
         x = data_bins[i]
         y = np.array(target_bins[i])
-        fpath = os.path.join(data_dir, f"cifar-100-split-10/{folder}/{i}")
+        fpath = os.path.join(dspath, f"{i}")
         with open(fpath, "wb+") as f:
             pickle.dump({"data": x, "targets": y}, f)
 
