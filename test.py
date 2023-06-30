@@ -37,7 +37,7 @@ def sequential_regression_overall_train(epochs: int, device):
         model=net, fx=f_target, start=-5, end=5
     )
     plt.show()
-    p = reunn.SupervisedTaskPipeline(
+    p = reunn.SupervisedRegressionTaskPipeline(
             backend="torch", log_dir="../logs", net=net, 
             hparam=None, device=device,
             criterion=nn.MSELoss(), 
@@ -73,7 +73,7 @@ def sequential_regression_phasic_train(epochs: int, device):
     )
     plt.show()
     for phase in range(phases):
-        p = reunn.SupervisedTaskPipeline(
+        p = reunn.SupervisedRegressionTaskPipeline(
             backend="torch", log_dir="../logs", net=net, 
             hparam=None, device=device,
             criterion=nn.MSELoss(), 
