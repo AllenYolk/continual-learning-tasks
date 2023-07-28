@@ -10,4 +10,5 @@ from .permuted_benchmark import (
 
 from .split_benchmark import (
     SplitCIFAR100,
+    SplitTinyImageNet200,
 )
